@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>مصنع الأمل</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0e4194">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="مصنع الأمل">
+<style>
+  html, body { margin:0; padding:0; height:100%; overflow:hidden; background:#f2f4f7; font-family:sans-serif; overscroll-behavior-y: contain; }
+  #loader {
+    position:fixed; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; background:#fff; z-index:10;
+  }
+  #loader img { width:120px; margin-bottom:16px; }
+  .spinner {
+    width:36px; height:36px; border:4px solid #e0e0e0;
+    border-top-color:#0e4194; border-radius:50%;
+    animation:spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  iframe { width:100%; height:100%; border:none; display:block; }
+</style>
+</head>
+<body>
+
+  <div id="loader">
+    <img src="icon-192.png" alt="مصنع الأمل">
+    <div class="spinner"></div>
+  </div>
+
+  <iframe id="appFrame" onload="document.getElementById('loader').style.display='none';"></iframe>
+
+  <script>
+    var APP_BASE_URL = "https://script.google.com/macros/s/AKfycbw61742zXoYpz-Z7hH8QZV7lKu57oc76JwTaA7RBUGmQHydDYMEJ2IdyQLI4IrIT2iLMw/exec";
+
+    function buildAppUrl() {
+      var role = null, email = null;
+      try {
+        role = localStorage.getItem('alamal_role');
+        email = localStorage.getItem('alamal_email');
+      } catch (e) {}
+      if (role) {
+        return APP_BASE_URL + "?autoRole=" + encodeURIComponent(role) + "&autoEmail=" + encodeURIComponent(email || '');
+      }
+      return APP_BASE_URL;
+    }
+
+    document.getElementById('appFrame').src = buildAppUrl();
+
+    window.addEventListener('message', function (e) {
+      if (!e.data || !e.data.type) return;
+      if (e.data.type === 'alamal-login') {
+        try {
+          localStorage.setItem('alamal_role', e.data.role);
+          localStorage.setItem('alamal_email', e.data.email || '');
+        } catch (err) {}
+      } else if (e.data.type === 'alamal-logout') {
+        try {
+          localStorage.removeItem('alamal_role');
+          localStorage.removeItem('alamal_email');
+        } catch (err) {}
+        document.getElementById('appFrame').src = APP_BASE_URL;
+      } else if (e.data.type === 'alamal-refresh') {
+        document.getElementById('loader').style.display = 'flex';
+        document.getElementById('appFrame').src = buildAppUrl();
+      }
+    });
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' });
+    }
+  </script>
+</body>
+</html>
